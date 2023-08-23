@@ -3,7 +3,7 @@ const router = express.Router();
 const schedule = require("node-schedule");
 const { User } = require("../models/user");
 const { Subscription } = require("../models/subscription");
-const userJwt = require("../middlewares/userJwt");
+const adminJwt = require("../middlewares/adminJwt");
 
 schedule.scheduleJob("*/30 * * * * *", async () => {
   try {
@@ -22,7 +22,7 @@ schedule.scheduleJob("*/30 * * * * *", async () => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/",adminJwt, async (req, res) => {
   try {
     const newSubscriptionPlan = new Subscription({
       name: req.body.name,
@@ -36,9 +36,52 @@ router.post("/", async (req, res) => {
   }
 });
 
-router.post("/purchaseSubscription/", userJwt, async (req, res) => {
+router.put("/:id",adminJwt, async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const subscriptionId = req.params.id;
+    const updatedSubscription = {
+      name: req.body.name,
+      price: req.body.price,
+      duration: req.body.duration,
+    };
+
+    const result = await Subscription.findByIdAndUpdate(
+      subscriptionId,
+      updatedSubscription,
+      { new: true }
+    );
+
+    if (!result) {
+      return res.status(404).json({ message: "Subscription not found" });
+    }
+
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+
+router.delete("/:id",adminJwt, async (req, res) => {
+  try {
+    const subscriptionId = req.params.id;
+
+    const result = await Subscription.findByIdAndDelete(subscriptionId);
+
+    if (!result) {
+      return res.status(404).json({ message: "Subscription not found" });
+    }
+
+    res.status(204).json({ message: "Subscription Deleted" });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+
+router.post("/purchaseSubscription/", adminJwt, async (req, res) => {
+  try {
+    const userId = req.body.userId;
     const selectedPlanId = req.body.planId;
 
     const selectedPlan = await Subscription.findById(selectedPlanId);

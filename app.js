@@ -1,11 +1,15 @@
 const express = require('express');
+const helmet = require('helmet');
 const app = express();
 require('dotenv/config');
 const mongoose = require('./middlewares/db');
+const globalErrorHandler = require('./middlewares/globalErrorHandler');
 
 const cors = require('cors');
 const morgan = require('morgan');
 
+
+app.use(helmet());
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 
@@ -24,7 +28,7 @@ const api = process.env.API_URL;
 app.use(`${api}/users`, usersRoutes);
 app.use(`${api}/subscriptionplans`, subscriptionsRoutes);
 
-// app.use(errorHandler);
+app.use(globalErrorHandler);
 
 
 

@@ -6,13 +6,13 @@ const bcrypt = require("bcrypt");
 const { Presence } = require("../models/presence");
 const { DateTime } = require('luxon');
 const algeriaTime = DateTime.now().setZone('Africa/Algiers');
+const userJwt = require("../middlewares/userJwt");
 
-
-router.get("/profile", async (req, res) => {
+router.get("/profile",userJwt, async (req, res) => {
   try {
     const userId = req.user.userId;
 
-    const user = await User.findById(userId).select("-passwordHash");
+    const user = await User.findById(userId).select("-passwordHash -isAdmin");
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
@@ -24,9 +24,9 @@ router.get("/profile", async (req, res) => {
   }
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id",userJwt, async (req, res) => {
   try {
-    const userId = req.params.id;
+    const userId = req.user.userId;
 
     const userExist = await User.findById(userId);
     let newPassword;
@@ -42,6 +42,7 @@ router.put("/:id", async (req, res) => {
       {
         username: req.body.username,
         passwordHash: newPassword,
+        isAdmin: false
       },
       { new: true }
     );
@@ -68,7 +69,6 @@ router.post("/login", async (req, res) => {
       try {
         const startOfDay = algeriaTime.startOf("day");
         const endOfDay = algeriaTime.endOf("day");
-        console.log(startOfDay.toJSDate(), endOfDay.toJSDate());
         const existingPresence = await Presence.findOne({
           user: user._id,
           date: {
@@ -131,6 +131,7 @@ router.post("/register", async (req, res) => {
     user = new User({
       username: req.body.username,
       passwordHash: bcrypt.hashSync(req.body.password, 10),
+      isAdmin: false,
     });
 
     user = await user.save();
@@ -152,9 +153,9 @@ router.post("/register", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id",userJwt, async (req, res) => {
   try {
-    const userId = req.params.id;
+    const userId = req.user.userId;
     const deletedUser = await User.findByIdAndRemove(userId);
 
     if (deletedUser) {
