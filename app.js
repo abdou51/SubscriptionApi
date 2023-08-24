@@ -4,7 +4,6 @@ const app = express();
 require('dotenv/config');
 const mongoose = require('./middlewares/db');
 const globalErrorHandler = require('./middlewares/globalErrorHandler');
-
 const cors = require('cors');
 const morgan = require('morgan');
 

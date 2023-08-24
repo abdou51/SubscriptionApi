@@ -19,6 +19,7 @@
     "jsonwebtoken": "^9.0.1",
     "luxon": "^3.4.0",
     "mongoose": "^7.4.3",
+    "mongoose-paginate-v2": "^1.7.31",
     "morgan": "^1.10.0",
     "node-schedule": "^2.1.1"
   }

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const mongoosePaginate = require('mongoose-paginate-v2');
 
 const presenceSchema = new mongoose.Schema({
   user: {
@@ -12,4 +13,5 @@ const presenceSchema = new mongoose.Schema({
   }
 });
 
+presenceSchema.plugin(mongoosePaginate);
 exports.Presence = mongoose.model('Presence', presenceSchema);
