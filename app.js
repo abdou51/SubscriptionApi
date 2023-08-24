@@ -20,6 +20,7 @@ app.use(morgan('tiny'));
 
 const usersRoutes = require('./routes/users');
 const subscriptionsRoutes = require('./routes/subscriptions');
+const presenceRoutes = require('./routes/presences');
 
 
 
@@ -27,6 +28,7 @@ const subscriptionsRoutes = require('./routes/subscriptions');
 const api = process.env.API_URL;
 app.use(`${api}/users`, usersRoutes);
 app.use(`${api}/subscriptionplans`, subscriptionsRoutes);
+app.use(`${api}/presences`, presenceRoutes);
 
 app.use(globalErrorHandler);
 

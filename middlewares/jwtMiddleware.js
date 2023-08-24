@@ -5,6 +5,7 @@ function generateToken(userId, isAdmin) {
   return jwt.sign(
     {
       userId: userId,
+      isAdmin: isAdmin
     },
     secret,
     { expiresIn: '1w' }

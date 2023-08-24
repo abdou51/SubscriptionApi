@@ -7,6 +7,24 @@ const { Presence } = require("../models/presence");
 const { DateTime } = require('luxon');
 const algeriaTime = DateTime.now().setZone('Africa/Algiers');
 const userJwt = require("../middlewares/userJwt");
+const adminJwt = require("../middlewares/adminJwt");
+
+
+router.get("/:id",adminJwt, async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    const user = await User.findById(userId).select("-passwordHash -isAdmin");
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json(user);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 router.get("/profile",userJwt, async (req, res) => {
   try {
@@ -67,30 +85,39 @@ router.post("/login", async (req, res) => {
 
     if (user && bcrypt.compareSync(req.body.password, user.passwordHash)) {
       try {
-        const startOfDay = algeriaTime.startOf("day");
-        const endOfDay = algeriaTime.endOf("day");
-        const existingPresence = await Presence.findOne({
-          user: user._id,
-          date: {
-            $gte: startOfDay.toJSDate(),
-            $lt: endOfDay.toJSDate(),
-          },
-        });
-
-        if (!existingPresence) {
-          const newPresence = new Presence({
+        if (!user.isAdmin && !user.subscriptionStatus) {
+          return res.status(400).send("User subscription is not active.");
+        }
+        let token;
+        
+        if (user.isAdmin) {
+          token = generateToken(user.id, user.isAdmin);
+        } else {
+          const startOfDay = algeriaTime.startOf("day");
+          const endOfDay = algeriaTime.endOf("day");
+          const existingPresence = await Presence.findOne({
             user: user._id,
-            date: algeriaTime.toJSDate(),
+            date: {
+              $gte: startOfDay.toJSDate(),
+              $lt: endOfDay.toJSDate(),
+            },
           });
 
-          await newPresence.save();
-        } else {
-          return res
-            .status(400)
-            .send("User already marked presence for the day.");
-        }
+          if (!existingPresence) {
+            const newPresence = new Presence({
+              user: user._id,
+              date: algeriaTime.toJSDate(),
+            });
 
-        const token = generateToken(user.id);
+            await newPresence.save();
+          } else {
+            return res
+              .status(400)
+              .send("User already marked presence for the day.");
+          }
+          
+          token = generateToken(user.id, user.isAdmin);
+        }
 
         res.setHeader("Authorization", `Bearer ${token}`);
         res.status(200).send("Login successful");
@@ -104,6 +131,8 @@ router.post("/login", async (req, res) => {
     res.status(500).send("An error occurred while finding the user.");
   }
 });
+
+
 
 
 router.post("/register", async (req, res) => {
@@ -142,7 +171,7 @@ router.post("/register", async (req, res) => {
         .json({ success: false, message: "The user cannot be created" });
     }
 
-    const token = generateToken(user.id);
+    const token = generateToken(user.id,user.isAdmin);
 
     res.setHeader("Authorization", `Bearer ${token}`);
     res
